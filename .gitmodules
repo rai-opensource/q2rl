@@ -1,0 +1,3 @@
+[submodule "mj_envs"]
+	path = mj_envs
+	url = https://github.com/nakamotoo/mj_envs
