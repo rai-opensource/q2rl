@@ -186,10 +186,10 @@ install_jax_on_matrix.sh
 # VSCode
 .vscode
 
-##LOgs and Environments
+##Logs and Environments
 D4RL/
 logs/
-data/
+/data/
 #
 
 #models/
