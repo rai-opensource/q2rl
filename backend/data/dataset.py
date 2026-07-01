@@ -1,9 +1,6 @@
-import collections
 from typing import Dict, Iterable, Optional, Tuple, Union
 
-import jax
 import numpy as np
-from flax.core import frozen_dict
 from gym.utils import seeding
 
 from backend.common.typing import Data

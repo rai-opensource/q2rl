@@ -15,10 +15,7 @@ from absl import flags
 
 from backend.data.dataset import Dataset, DatasetDict, _sample
 from backend.envs.env_common import calc_return_to_go
-from flax.core import frozen_dict
-from gym.spaces import Box
-import copy
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional
 
 
 def _init_replay_dict(
@@ -212,7 +209,6 @@ class ReplayBuffer(Dataset):
         Args:
             save_dir: Directory to load buffer files from.
         """
-        # TODO: maybe make sure the dataset_dict thats being loaded has mc_returns if self is ReplayBufferMC
         save_buffer_file = os.path.join(save_dir, "online_buffer.npy")
         save_size_file = os.path.join(save_dir, "size.npy")
         self.dataset_dict = np.load(save_buffer_file, allow_pickle=True).item()
@@ -264,6 +260,7 @@ class ReplayBuffer_IBRL(ReplayBuffer):
 
         self._allow_idxs = []
         self._traj_start_idx = 0
+
 
 class ReplayBufferMC(ReplayBuffer):
     """
@@ -325,9 +322,6 @@ class ReplayBufferMC(ReplayBuffer):
         data_dict["mc_returns"] = None
         _insert_recursively(self.dataset_dict, data_dict, self._insert_index)
 
-        # if "dones" not in data_dict:
-        #     data_dict["dones"] = 1 - data_dict["masks"]
-
         if data_dict["dones"] == 1.0:
             # compute the mc_returns
             FLAGS = flags.FLAGS
@@ -384,6 +378,7 @@ class ReplayBufferMC(ReplayBuffer):
             batch[k] = _sample(self.dataset_dict[k], indx)
 
         return batch
+
 
 class ReplayBuffer_Q2RL(ReplayBuffer):
     """
@@ -454,9 +449,6 @@ class ReplayBuffer_Q2RL(ReplayBuffer):
         data_dict["mc_returns"] = None
         _insert_recursively(self.dataset_dict, data_dict, self._insert_index)
 
-        # if "dones" not in data_dict:
-        #     data_dict["dones"] = 1 - data_dict["masks"]
-
         if data_dict["dones"] == 1.0:
             # compute the mc_returns
             FLAGS = flags.FLAGS
@@ -513,4 +505,3 @@ class ReplayBuffer_Q2RL(ReplayBuffer):
             batch[k] = _sample(self.dataset_dict[k], indx)
 
         return batch
-
