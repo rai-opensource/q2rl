@@ -1,10 +1,24 @@
 #!/bin/bash
 set -e
 
-# Check if hf is a command, exit if not
+# Ensure Hugging Face CLI is installed.
 if ! command -v hf &> /dev/null; then
-    echo "hf command not found. Please install Hugging Face CLI and authenticate before running this script."
-    exit 1
+    echo "hf command not found. Installing Hugging Face CLI..."
+
+    if ! command -v curl &> /dev/null; then
+        echo "curl is required to install Hugging Face CLI automatically."
+        echo "Please install curl and rerun this script."
+        exit 1
+    fi
+
+    curl -LsSf https://hf.co/cli/install.sh | bash
+
+    if ! command -v hf &> /dev/null; then
+        echo "Failed to install Hugging Face CLI automatically."
+        echo "If installed to ~/.local/bin, add it to PATH and rerun this script."
+        echo "Please run: curl -LsSf https://hf.co/cli/install.sh | bash"
+        exit 1
+    fi
 fi
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"

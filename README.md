@@ -60,7 +60,7 @@ We provide installation instructions with conda and uv.
     pip install -e .
     ```
 
-    Download the adroit dataset from [here](https://drive.google.com/file/d/1yUdJnGgYit94X_AvV6JJP5Y3Lx2JF30Y/view) and unzip the files into `~/adroit_data/`.
+    Download the adroit dataset from [here](https://drive.google.com/file/d/1yUdJnGgYit94X_AvV6JJP5Y3Lx2JF30Y/view) and unzip the files into `~/adroit_data/offpolicy_hand_data`.
     If you would like to put the adroit datasets into another directory, use the environment variable `DATA_DIR_PREFIX` (checkout the code [here](https://github.com/zhouzypaul/wsrl/blob/4b5665987079934a926c10a09bd81bc3c48ea9fa/wsrl/envs/adroit_binary_dataset.py#L7) for more details).
     ```bash
     export DATA_DIR_PREFIX=/path/to/your/data
@@ -103,7 +103,8 @@ We provide installation instructions with conda and uv.
 
 ## Running Experiments
 
-All BC policies and datasets are uploaded to huggingface [here](https://hf.co/collections/theaiinstitute/q2rl). Download using `bash scripts/download.sh`.
+All BC policies and datasets are uploaded to huggingface [here](https://hf.co/collections/theaiinstitute/q2rl). 
+Run `bash scripts/download.sh`. The script will install the Hugging Face CLI automatically if `hf` is not already installed.
 
 We follow a similar structure to [WSRL](https://github.com/zhouzypaul/wsrl). 
 
@@ -114,6 +115,11 @@ Also export the repo to the python path `export PYTHONPATH=/path/to/q2rl:$PYTHON
 The example scripts do this for you.
 
 To kill a running experiment, find the wandb group name from `logs/`, then run `pkill -f "[wandb-group-name]"`.
+
+## Changelog
+
+- 2026-05-07: Initial public release.
+- 2026-07-01: Bugfix `backend/data/` folder.
 
 
 ## Citation 
