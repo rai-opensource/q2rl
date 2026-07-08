@@ -26,7 +26,6 @@ do
     --agent sac \
     --group pen_wsrl \
     --config experiments/configs/train_config.py:adroit_wsrl \
-    --project q2rl \
     --num_offline_steps 20_000 \
     --resume_path $PROJECT_ROOT/data/policies/rl_offline/pen/calql/checkpoint_20000 \
     --reward_scale 10.0 \

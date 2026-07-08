@@ -26,7 +26,6 @@ do
     python3 main/ibrl/ibrl_gym.py \
     --agent ibrl_state \
     --config experiments/configs/train_config.py:adroit_wsrl \
-    --project q2rl \
     --group door_ibrl \
     --reward_scale 10.0 \
     --reward_bias 5.0 \

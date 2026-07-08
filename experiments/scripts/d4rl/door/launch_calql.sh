@@ -25,7 +25,6 @@ do
     python main/offline_to_online_rl/finetune_gym.py \
     --agent calql \
     --config experiments/configs/train_config.py:adroit_cql \
-    --project q2rl \
     --group door_calql \
     --warmup_steps 0 \
     --num_offline_steps 20_000 \
