@@ -16,8 +16,8 @@ export MUJOCO_GL=egl
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
 
-seed=(0 10 20)
-for i in {0..2}
+seed=(0 10 20 30 40)
+for i in {0..4}
 do
     python3 main/q2rl/q2rl_robosuite.py \
         --agent=q2rl_rs \

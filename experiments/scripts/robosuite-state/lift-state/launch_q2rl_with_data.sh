@@ -18,8 +18,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
 
 export DATASET_PATH=$(python -c "from huggingface_hub import snapshot_download; print(snapshot_download('theaiinstitute/q2rl_robomimic_datasets', repo_type='dataset'))")
 
-seed=(0 10 20)
-for i in {0..2}
+seed=(0 10 20 30 40)
+for i in {0..4}
 do
     python3 main/q2rl/q2rl_robosuite.py \
         --agent=q2rl_rs \
