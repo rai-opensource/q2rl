@@ -25,7 +25,6 @@ do
     python3 main/q2rl/q2rl_gym.py \
     --agent q2rl  \
     --config experiments/configs/train_config.py:kitchen_wsrl \
-    --project q2rl \
     --group kitchen_q2rl \
     --reward_scale 1.0 \
     --reward_bias -4.0 \

@@ -25,7 +25,6 @@ do
     python3 main/ibrl/ibrl_gym.py \
     --agent ibrl_state \
     --config experiments/configs/train_config.py:kitchen_wsrl \
-    --project q2rl \
     --group kitchen_ibrl \
     --reward_scale 1.0 \
     --reward_bias -4.0 \

@@ -25,7 +25,6 @@ do
     python3 main/offline_to_online_rl/finetune_gym.py \
     --agent sac \
     --config experiments/configs/train_config.py:adroit_wsrl \
-    --project q2rl \
     --group door_wsrl \
     --num_offline_steps 20_000 \
     --resume_path $PROJECT_ROOT/data/policies/rl_offline/door/calql/checkpoint_20000 \

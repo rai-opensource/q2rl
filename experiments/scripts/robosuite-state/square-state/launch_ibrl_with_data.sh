@@ -22,7 +22,6 @@ do
     python3 main/ibrl/ibrl_robosuite.py \
     --agent ibrl_state \
     --config experiments/configs/train_config.py:robosuite_ibrl \
-    --project q2rl \
     --group square_state_ibrl_with_data \
     --get_demo_buffer=True \
     --data_filter_key=train \

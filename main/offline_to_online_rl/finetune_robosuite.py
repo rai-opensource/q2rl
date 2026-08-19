@@ -99,7 +99,7 @@ flags.DEFINE_bool("deterministic_eval", True, "Whether to use deterministic eval
 
 # wandb
 flags.DEFINE_string("exp_name", "", "Experiment name for wandb logging")
-flags.DEFINE_string("project", None, "Wandb project folder")
+flags.DEFINE_string("project", "q2rl", "Wandb project folder")
 flags.DEFINE_string("group", None, "Wandb group of the experiment")
 flags.DEFINE_bool("debug", False, "If true, no logging to wandb")
 flags.DEFINE_bool("get_demo_buffer", False, "Load demo trajs into demo buffer")
@@ -134,7 +134,7 @@ def main(_):
     wandb_config = WandBLogger.get_default_config()
     wandb_config.update(
         {
-            "project": "q2rl" or FLAGS.project,
+            "project": FLAGS.project,
             "group": FLAGS.group,
             "exp_descriptor": f"{FLAGS.exp_name}_{FLAGS.env}_{FLAGS.agent}_seed{FLAGS.seed}",
         }

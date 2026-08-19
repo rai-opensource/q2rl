@@ -22,7 +22,6 @@ do
     python3 main/q2rl/q2rl_robosuite.py \
     --agent q2rl_rs \
     --config experiments/configs/train_config.py:robosuite_q2rl \
-    --project q2rl \
     --group square_state_q2rl_with_data \
     --get_demo_buffer=True \
     --demo_path data/datasets/square/ph/low_dim_v141.hdf5 \
