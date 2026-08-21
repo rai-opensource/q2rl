@@ -60,7 +60,7 @@ We provide installation instructions with conda and uv.
     pip install -e .
     ```
 
-    Download the adroit dataset from [here](https://drive.google.com/file/d/1yUdJnGgYit94X_AvV6JJP5Y3Lx2JF30Y/view) and unzip the files into `~/adroit_data/offpolicy_hand_data`.
+    Download the adroit dataset from [here](https://drive.google.com/file/d/1yUdJnGgYit94X_AvV6JJP5Y3Lx2JF30Y/view) and unzip the files into `data/adroit_data/offpolicy_hand_data`.
     If you would like to put the adroit datasets into another directory, use the environment variable `DATA_DIR_PREFIX` (checkout the code [here](https://github.com/zhouzypaul/wsrl/blob/4b5665987079934a926c10a09bd81bc3c48ea9fa/wsrl/envs/adroit_binary_dataset.py#L7) for more details).
     ```bash
     export DATA_DIR_PREFIX=/path/to/your/data
@@ -81,12 +81,12 @@ We provide installation instructions with conda and uv.
 
 ### Install with uv
 1. Install [`uv`](https://docs.astral.sh/uv/)
-2. Clone this repository with `git clone --recursive`.
-2. Install Mujoco with `./scripts/install_mujoco.sh`
+2. Clone this repository with `git clone --recursive`, or git clone followed by `git submodule update --init --recursive`.
+3. Install Mujoco with `./scripts/install_mujoco.sh`
     a. Ensure that your system has the requisite Mesa development headers installed; on Ubuntu, run `sudo apt install libosmesa6-dev`
     b. Note that you will need to export the environment variables printed by `install_mujoco.sh` to your `.bashrc` or `.zshrc`, or manually export them in your shell before running any scripts
-2. Install dependencies with `uv sync`.
-3. To use the adroit envs, you would need
+4. Install dependencies with `uv sync`.
+5. To use the adroit envs, you would need
     ```
     git clone --recursive https://github.com/nakamotoo/mj_envs.git
     cd mj_envs
@@ -94,17 +94,19 @@ We provide installation instructions with conda and uv.
     uv pip install -e .
     ```
 
-    Download the adroit dataset from [here](https://drive.google.com/file/d/1yUdJnGgYit94X_AvV6JJP5Y3Lx2JF30Y/view) and unzip the files into `~/adroit_data/`.
-    If you would like to put the adroit datasets into another directory, use the environment variable `DATA_DIR_PREFIX` (checkout the code [here](https://github.com/zhouzypaul/wsrl/blob/4b5665987079934a926c10a09bd81bc3c48ea9fa/wsrl/envs/adroit_binary_dataset.py#L7) for more details).
+    Download the adroit dataset from [here](https://drive.google.com/file/d/1yUdJnGgYit94X_AvV6JJP5Y3Lx2JF30Y/view) and unzip the files into `data/adroit_data/`.
+    If you would like to put the adroit datasets into another directory, use the environment variable `DATA_DIR_PREFIX` (check out the code [here](https://github.com/zhouzypaul/wsrl/blob/4b5665987079934a926c10a09bd81bc3c48ea9fa/wsrl/envs/adroit_binary_dataset.py#L7) for more details).
     ```bash
     export DATA_DIR_PREFIX=/path/to/your/data
     ```
-4. Either run scripts with `uv run` or execute `source .venv/bin/activate` to enter the virtual environment before running any scripts.
+6. Either run scripts with `uv run` or execute `source .venv/bin/activate` to enter the virtual environment before running any scripts.
 
 ## Running Experiments
 
 All BC policies and datasets are uploaded to huggingface [here](https://hf.co/collections/theaiinstitute/q2rl). 
 Run `bash scripts/download.sh`. The script will install the Hugging Face CLI automatically if `hf` is not already installed.
+
+Log in to wandb before running experiments: `wandb login`
 
 We follow a similar structure to [WSRL](https://github.com/zhouzypaul/wsrl). 
 
@@ -115,6 +117,29 @@ Also export the repo to the python path `export PYTHONPATH=/path/to/q2rl:$PYTHON
 The example scripts do this for you.
 
 To kill a running experiment, find the wandb group name from `logs/`, then run `pkill -f "[wandb-group-name]"`.
+
+Experiment progress is logged to wandb (viewable on your wandb dashboard) and locally under `logs/`.
+
+### Docker
+
+The Docker image handles system-level dependencies (CUDA, MuJoCo, Mesa, etc.) while the project source code is mounted from the host at runtime. The project's own packages are installed inside the container by the entrypoint rather than baked into the image. This lets you edit code on the host and immediately use it in the container, and avoids conflicts between the host and container virtual environments (the container's venv lives at `/opt/venv`, separate from any host `.venv`).
+
+1. Build the Docker image:
+    ```bash
+    docker build --build-arg PRIME_DEPS=1 -t q2rl .
+    ```
+    `PRIME_DEPS=1` installs the locked third-party dependencies into the image's venv, so containers start with them already present and the runtime `uv sync` only has to add the project itself. Leave it off (the default) for a smaller image if you would rather pay that install once per container instead.
+2. Run the container with GPU access, mounting your checkout:
+    ```bash
+    docker run --runtime=nvidia -v $(pwd):/workspace -it q2rl
+    ```
+    Python dependencies and mj_envs are installed automatically on first entry. Subsequent entries into the same container skip the install.
+3. To run an experiment directly, pass your [wandb API key](https://wandb.ai/authorize) via the environment:
+    ```bash
+     export WANDB_API_KEY=<your-key>
+    docker run --runtime=nvidia -v $(pwd):/workspace -e WANDB_API_KEY=$WANDB_API_KEY -it q2rl bash experiments/scripts/d4rl/pen/launch_q2rl.sh
+    ```
+    The entrypoint handles dependency installation and venv activation before running the command.
 
 ## Changelog
 

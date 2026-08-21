@@ -8,7 +8,7 @@ from absl import flags
 
 from backend.envs.env_common import calc_return_to_go
 
-DEMO_PATHS = os.environ.get("DATA_DIR_PREFIX", os.path.expanduser("~/adroit_data"))
+DEMO_PATHS = os.environ.get("DATA_DIR_PREFIX", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "adroit_data"))
 
 FLAGS = flags.FLAGS
 
