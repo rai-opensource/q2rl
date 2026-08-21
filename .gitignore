@@ -1,6 +1,7 @@
 # custom
 .vscode/
 .onager/
+mj_envs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -195,7 +196,9 @@ logs/
 #models/
 #experiments/
 
-##data files 
+##data files
 *.pkl
 *.npz
-Dockerfile
+
+##locally generated experiment launch manifests
+experiments/paper_runs/
