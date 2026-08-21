@@ -18,6 +18,10 @@ import jax.numpy as jnp
 from absl import flags
 
 from backend.common.common import JaxRLTrainState, ModuleDict, nonpytree_field
+from backend.common.diag_gaussian_entropy import (
+    diag_gaussian_entropy,
+    legacy_diag_gaussian_entropy,
+)
 from backend.common.optimizers import make_optimizer
 from backend.common.typing import Batch, Data, Params, PRNGKey
 from backend.networks.actor_critic_nets import Critic, Policy, ensemblize, ValueCritic
@@ -250,6 +254,18 @@ class Q2RLAgent(flax.struct.PyTreeNode):
 
         return target_next_qs
 
+    def bc_differential_entropy(self, dist_var: jnp.ndarray) -> jnp.ndarray:
+        """Entropy of the diagonal-Gaussian BC policy, per sample.
+
+        Args:
+            dist_var: per-dimension BC policy variances, ``(..., D)``.
+        """
+        if self.config.get("fix_logprob_entropy", True) and not self.config.get(
+            "old_gmm_entropy", False
+        ):
+            return diag_gaussian_entropy(dist_var)
+        return legacy_diag_gaussian_entropy(dist_var)
+
     def qest_critic_loss_fn(self, batch, params: Params, rng: PRNGKey):
         """classes that inherit this class can change this function"""
 
@@ -258,7 +274,7 @@ class Q2RLAgent(flax.struct.PyTreeNode):
             batch["actions"],
             argmax=True,
         )
-        differential_entropy = 0.5 * jnp.log2(2 * jnp.e * jnp.pi * jnp.mean(dist_var, axis=1) + 1e-10)
+        differential_entropy = self.bc_differential_entropy(dist_var)
         rng, key = jax.random.split(rng)
         target_q_bc = batch["mc_returns"] + action_log_probs  + differential_entropy
         batch_size = batch["rewards"].shape[0]
@@ -571,7 +587,7 @@ class Q2RLAgent(flax.struct.PyTreeNode):
 
         # Calculate Q_bc
         bc_action, log_prob, mean, dist_var = self.bc_agent.sample_actions_and_log_probs(observations, argmax=True)
-        differential_entropy = 0.5 * jnp.log2(2 * jnp.e * jnp.pi * jnp.mean(dist_var) + 1e-10)
+        differential_entropy = self.bc_differential_entropy(dist_var)
         v = self.forward_value_critic(observations, train=False)
         bc_q =  v + log_prob + differential_entropy
 
@@ -640,6 +656,9 @@ class Q2RLAgent(flax.struct.PyTreeNode):
         # bc loss:
         bc_weight: float = 0.0,
         bc_agent: BCAgent = None,
+        # see backend/common/diag_gaussian_entropy.py
+        fix_logprob_entropy: bool = True,
+        old_gmm_entropy: bool = False,
         **kwargs,
     ):
         """common part of both create() methods.
@@ -696,6 +715,8 @@ class Q2RLAgent(flax.struct.PyTreeNode):
                 bc_weight=bc_weight,
                 n_actions=n_actions,
                 max_target_backup=max_target_backup,
+                fix_logprob_entropy=fix_logprob_entropy,
+                old_gmm_entropy=old_gmm_entropy,
                 **kwargs,
             ),
             bc_agent=bc_agent,
