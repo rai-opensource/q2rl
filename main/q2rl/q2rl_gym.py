@@ -81,6 +81,23 @@ flags.DEFINE_string("replay_path", None, "path to load the replay buffer from")
 flags.DEFINE_integer("replay_buffer_capacity", int(1e6), "Replay buffer capacity")
 flags.DEFINE_float("bc_weight", 0.3, "Initial BC weight")
 
+# See backend/common/diag_gaussian_entropy.py.
+flags.DEFINE_bool(
+    "fix_logprob_entropy",
+    True,
+    "Use the exact diagonal-Gaussian entropy 0.5*sum_i log(2*pi*e*var_i) (nats) "
+    "for the BC entropy term, so it is on the same scale as the log-prob it is "
+    "added to. Pass --nofix_logprob_entropy for the old log2/mean-variance "
+    "formula (bits).",
+)
+flags.DEFINE_bool(
+    "old_gmm_entropy",
+    False,
+    "Keep the old entropy formula. Same meaning as on the robosuite "
+    "entrypoints, where the two changes are separable; here it just cancels "
+    "--fix_logprob_entropy.",
+)
+
 config_flags.DEFINE_config_file(
     "config",
     None,
@@ -205,6 +222,8 @@ def main(_):
         **FLAGS.config.agent_kwargs,
         bc_agent=bc_agent,
         bc_weight=FLAGS.bc_weight,
+        fix_logprob_entropy=FLAGS.fix_logprob_entropy,
+        old_gmm_entropy=FLAGS.old_gmm_entropy,
     )
     
     if FLAGS.resume_path_agent != "":

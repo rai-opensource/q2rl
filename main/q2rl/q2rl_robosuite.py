@@ -14,6 +14,7 @@ from ml_collections import config_flags
 from backend.agents import agents
 from backend.common import wandb
 from backend.common.evaluation import evaluate_and_record_videos_q2rl_robosuite
+from backend.common.bc_consistent_query import consistent_query_bc
 from backend.common.wandb import WandBLogger
 from backend.data.replay_buffer import ReplayBuffer_Q2RL
 
@@ -69,6 +70,14 @@ flags.DEFINE_integer("utd", 1, "update-to-data ratio of the critic")
 flags.DEFINE_string("demo_path", None, "path to load the demo replay buffer from")
 flags.DEFINE_string("data_filter_key", None, "Key to filter data")
 flags.DEFINE_bool("get_demo_buffer", False, "Load demo trajs into demo buffer")
+flags.DEFINE_bool(
+    "fix_masks_and_done",
+    True,
+    "Mask collected transitions with 1-truncated rather than 1-done. The "
+    "robosuite wrappers set truncated on task success and done at the time "
+    "limit, so this is what stops the TD target bootstrapping past a terminal. "
+    "Pass --nofix_masks_and_done for the old behavior.",
+)
 
 
 flags.DEFINE_integer(
@@ -88,6 +97,22 @@ flags.DEFINE_integer("replay_buffer_capacity", int(2e6), "Replay buffer capacity
 flags.DEFINE_bool("render", False, "Render the environment")
 
 flags.DEFINE_float("bc_weight", 0.3, "Initial BC weight")
+
+# See backend/common/bc_consistent_query.py.
+flags.DEFINE_bool(
+    "fix_logprob_entropy",
+    True,
+    "Sample the BC action and score its log-prob and entropy under the same "
+    "distribution, instead of robomimic's mismatched two-pass query. Pass "
+    "--nofix_logprob_entropy for the old behavior.",
+)
+flags.DEFINE_bool(
+    "old_gmm_entropy",
+    False,
+    "Keep the legacy log2/mean-variance GMM entropy (bits) instead of the "
+    "H(w)+sum_k w_k H_k upper bound (nats), so the two changes above can be "
+    "evaluated separately. Ignored when --nofix_logprob_entropy is passed.",
+)
 
 config_flags.DEFINE_config_file(
     "config",
@@ -178,9 +203,19 @@ def main(_):
         robomimic_obs = ObsUtils.process_obs_dict(robomimic_obs)
         return robomimic_obs
     
+    # Drop-in for robomimic's ``RolloutPolicy.__call__(ob, log_prob=True)``.
+    def bc_query(ob, log_prob=True):
+        if not FLAGS.fix_logprob_entropy:
+            return robomimic_agent(ob=ob, log_prob=log_prob)
+        if not log_prob:
+            return robomimic_agent(ob=ob, log_prob=False)
+        return consistent_query_bc(
+            robomimic_agent, ob, old_gmm_entropy=FLAGS.old_gmm_entropy
+        )
+
     robomimic_agent.start_episode()
     observation, info = finetune_env.reset()
-    action, log_prob, entropy = robomimic_agent(ob=get_robomimic_obs(observation), log_prob=True)
+    action, log_prob, entropy = bc_query(ob=get_robomimic_obs(observation), log_prob=True)
 
 
     """
@@ -268,16 +303,17 @@ def main(_):
             i=0
             while not done and not truncated:
                 i+=1
-                action, log_prob, entropy  = robomimic_agent(ob=get_robomimic_obs(observation), log_prob=True)
+                action, log_prob, entropy  = bc_query(ob=get_robomimic_obs(observation), log_prob=True)
                 next_observation, reward, done, truncated, info = finetune_env.step(
                     action
                 )
+                mask_val = 1.0 - truncated if FLAGS.fix_masks_and_done else 1.0 - done
                 transition = dict(
                         observations=observation,
                         next_observations=next_observation,
                         actions=action,
                         rewards=reward,
-                        masks=1.0 - done,
+                        masks=float(mask_val),
                         dones=1.0 if (done or truncated) else 0,
                         bc_probs=log_prob,
                         bc_entropy=entropy,
@@ -351,21 +387,22 @@ def main(_):
       
         else:
             rng, action_rng = jax.random.split(rng)
-            bc_action, bc_log_prob, bc_entropy = robomimic_agent(ob=get_robomimic_obs(observation), log_prob=True)
+            bc_action, bc_log_prob, bc_entropy = bc_query(ob=get_robomimic_obs(observation), log_prob=True)
             action, sample_info = agent.sample_actions(observation, bc_action=bc_action,
                                                     bc_log_prob=bc_log_prob, bc_entropy=bc_entropy,
                                                     argmax=True, log=True)
-           
+
             next_observation, reward, done, truncated, info = finetune_env.step(
                 action
             )
 
+            mask_val = 1.0 - truncated if FLAGS.fix_masks_and_done else 1.0 - done
             transition = dict(
                 observations=observation,
                 next_observations=next_observation,
                 actions=action,
                 rewards=reward,
-                masks=1.0 - done,
+                masks=float(mask_val),
                 dones=1.0 if (done or truncated) else 0,
                 bc_probs=bc_log_prob,
                 bc_entropy=bc_entropy,
@@ -402,7 +439,7 @@ def main(_):
                 policy_fn = partial(
                     agent.sample_actions, argmax=True, log=True
                 )
-                bc_fn = robomimic_agent
+                bc_fn = bc_query
 
                 eval_func = partial(
                     evaluate_and_record_videos_q2rl_robosuite,
